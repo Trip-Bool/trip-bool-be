@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from models.models import db, TripModel
 import os
 import datetime
+import urllib.request
 import json
 from urllib.parse import quote_plus, urlencode
 from dotenv import find_dotenv, load_dotenv
@@ -62,7 +63,54 @@ def create():
         db.session.add(trip)
         db.session.commit()
         return make_response("", 201)
- 
+
+def get_info(url):
+    '''
+    Given a url, this function makes a get request to the provided url, then converts the json recieved into a python dictionary. 
+    '''
+    response = urllib.request.urlopen(url)
+    data = response.read()
+    dict = json.loads(data)
+    return dict
+
+def coordinates(location):
+    '''
+    Returs an object with latitude and lon keys of a given location. 
+    '''
+    coordinates_url = f"https://us1.locationiq.com/v1/search?key=YOUR_ACCESS_TOKEN&q={location}&format=json"
+    coordinates_dict = get_info(coordinates_url)
+    return {
+        "lat": coordinates_dict["lat"],
+        "lon": coordinates_dict["lon"],
+    }
+
+def current_weather(lat, lon):
+    '''
+    takes in lat and long and return an list of objects with the eight days of weather data. Data is a list of objects with a temp and weather attributes. 
+    '''
+    weather_url = f'https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&appid=APIkey'
+    weather_info = get_info(weather_url)
+    weather_data = []
+    for day in weather_info["daily"]:
+        weather_data.append({
+            "temp": day["temp"]["day"],
+            "weather": day["weather"],
+        })
+    return weather_data
+
+
+def weather_time_machine(lat, lon, day):
+    '''
+    lat, lon, and day as parameters. Day should be one year before the trip day being used for the query. returns weather data as an object with a temp and weather parameters. 
+    '''
+    weather_url = f'https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={day}&appid=APIkey'
+    weather_info = get_info(weather_url)
+    return {
+        "temp": weather_info['data'][0]["temp"],
+        "weather": weather_info['data'][0]["weather"],
+    }
+
+
 @app.route('/data')
 def retrieve_list():
     trips = TripModel.query.all()
