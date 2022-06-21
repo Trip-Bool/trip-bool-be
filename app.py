@@ -1,8 +1,13 @@
-from flask import Flask, redirect, request, jsonify, make_response
+from dis import pretty_flags
+from flask import Flask, redirect, request, jsonify, make_response, render_template, url_for, session
 from flask_migrate import Migrate
 from models.models import db, TripModel
 import os
 import datetime
+import json
+from urllib.parse import quote_plus, urlencode
+from dotenv import find_dotenv, load_dotenv
+from authlib.integrations.flask_client import OAuth
 
 
 # Date Start and Date End Unix Conversions:
@@ -14,8 +19,26 @@ username = os.environ.get('DB_USERNAME')
 password = os.environ.get('DB_PASSWORD')
 db_url = os.environ.get('DB_URL')
 db_name = os.environ.get('DB_NAME')
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
+
+# OAuth Setup
+app.secret_key = os.environ.get("APP_SECRET_KEY")
+oauth = OAuth(app)
+oauth.register(
+    "auth0",
+    client_id = os.environ.get("AUTH0_CLIENT_ID"),
+    client_secret = os.environ.get("AUTH0_CLIENT_SECRET"),
+    client_kwargs={
+        "scope": "openid profile email",
+    },
+    server_metadata_url=f'https://{os.environ.get("AUTH0_DOMAIN")}/.well-known/openid-configuration'
+)
+
+# Database Setup
 app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{username}:{password}@{db_url}/{db_name}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
@@ -25,6 +48,7 @@ migrate = Migrate(app, db)
 def create_table():
     db.create_all()
 
+# Database Routes
 @app.route('/data/create', methods=["POST"])
 def create():
     if request.method == 'POST':
@@ -99,10 +123,36 @@ def delete(id):
     
     return make_response(trip, 200)
 
-
+# Home Route
 @app.route("/")
 def index():
-    return redirect("/data")
+    return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
+
+# Auth0 Routes
+@app.route("/login")
+def login():
+    return oauth.auth0.authorize_redirect(
+        redirect_uri=url_for("callback", _external=True)
+    )
+
+@app.route("/callback", methods=["GET", "POST"])
+def callback():
+    token = oauth.auth0.authorize_access_token()
+    session["user"] = token
+    return redirect("/")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(
+        'https://'+os.environ.get("AUTH0_DOMAIN")+'/v2/logout?'+urlencode(
+            {
+                'returnTo': url_for("index", _external=True),
+                'client_id': os.environ.get('AUTH0_CLIENT_ID'),
+            },
+            quote_via=quote_plus,
+        )
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
