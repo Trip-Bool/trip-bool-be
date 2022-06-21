@@ -2,6 +2,13 @@ from flask import Flask, redirect, request, jsonify, make_response
 from flask_migrate import Migrate
 from models.models import db, TripModel
 import os
+import datetime
+
+
+# Date Start and Date End Unix Conversions:
+    # "start_unix": datetime.datetime.timestamp(trip.date_start)
+    # "end_unix": datetime.datetime.timestamp(trip.date_end)
+
 
 username = os.environ.get('DB_USERNAME')
 password = os.environ.get('DB_PASSWORD')
@@ -22,9 +29,12 @@ def create_table():
 def create():
     if request.method == 'POST':
         name = request.form['name']
-        length = request.form['length']
+        start_date = request.form['start_date']
+        end_date = request.form['end_date']
         location = request.form['location']
-        trip = TripModel(name=name,length=length,location=location)
+        start_datetime = datetime.datetime.fromisoformat(start_date)
+        end_datetime = datetime.datetime.fromisoformat(end_date)
+        trip = TripModel(name=name, date_start=start_datetime, date_end=end_datetime, location=location)
         db.session.add(trip)
         db.session.commit()
         return make_response("", 201)
@@ -36,7 +46,8 @@ def retrieve_list():
     for trip in trips:
         item = {
             "name": trip.name,
-            "length": trip.length,
+            "date_start": trip.date_start,
+            "date_end": trip.date_end,
             "location": trip.location
         }
         data[f'{trip.id}'] = item
@@ -48,7 +59,8 @@ def retrive_trip(id):
     if trip:
         data = {
             "name": trip.name,
-            "length": trip.length,
+            "date_start": trip.date_start,
+            "date_end": trip.date_end,
             "location": trip.location
         }
         return make_response(data, 200)
@@ -62,9 +74,12 @@ def update(id):
             db.session.delete(trip)
             db.session.commit()
             name = request.form['name']
-            length = request.form['length']
+            start_date = request.form['start_date']
+            end_date = request.form['end_date']
             location = request.form['location']
-            trip = TripModel(id=id, name=name,length=length,location=location)
+            start_datetime = datetime.datetime.fromisoformat(start_date)
+            end_datetime = datetime.datetime.fromisoformat(end_date)
+            trip = TripModel(name=name, date_start=start_datetime, date_end=end_datetime, location=location)
             db.session.add(trip)
             db.session.commit()
             return make_response("", 201)
@@ -82,7 +97,7 @@ def delete(id):
             return make_response("", 410)
         return make_response('', 404)
     
-    return jsonify(trip)
+    return make_response(trip, 200)
 
 
 @app.route("/")
