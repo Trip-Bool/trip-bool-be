@@ -144,10 +144,10 @@ def get_by_name(name):
 # Home Route
 @app.route("/")
 def index():
-    url = 'http://127.0.0.1:5000/data/20'
-    return_trip = requests.get(url)
-    return_json = return_trip.json()
-    print(type(return_json['start_date']))
+    # url = 'http://127.0.0.1:5000/data/20'
+    # return_trip = requests.get(url)
+    # return_json = return_trip.json()
+    # print(type(return_json['start_date']))
 
     return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
 
