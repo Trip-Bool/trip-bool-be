@@ -136,7 +136,7 @@ def index():
 @app.route("/weather/<string:location>/<int:start_date>/<int:end_date>")
 def get_trip_weather(location, start_date, end_date):
     """
-    Function takes a trip's start and end dates.
+    Function takes a trip's location, start and end dates.
     Returns a collection of weather data for the trip's duration.
 
     Helper functions
@@ -147,6 +147,7 @@ def get_trip_weather(location, start_date, end_date):
 
     Arguments
     ---------
+    :location: string
     :start_date: 10-digit Unix timestamp
     :end_date: 10-digit Unix timestamp
 
@@ -166,7 +167,7 @@ def get_trip_weather(location, start_date, end_date):
     date_list = []
 
     date_marker = start_date
-    while date_marker <= boundary:
+    while date_marker <= end_date:
         date_list.append(date_marker)
         date_marker = add_time_to_stamp(date_marker, 1)
 
@@ -218,12 +219,13 @@ def get_historic(coords, dates, historics={}):
     :forecasts: empty dictionary passed in from get_trip_weather()
     """
     historics["dates"] = dates
-    lat = coords["lat"]
-    lon = coords["lon"]
+    lat = coords.json["lat"]
+    lon = coords.json["lon"]
     for date in dates:
         last_year_date = add_time_to_stamp(date, -365)
-        date_weather = weather_time_machine(lat, lon, last_year_date)
-        historics[date] = date_weather
+        api_result = weather_time_machine(lat, lon, last_year_date)
+        api_response = api_result.json
+        historics[date] = api_response
     return
 
 
@@ -322,6 +324,7 @@ def logout():
             quote_via=quote_plus,
         )
     )
+
 
 if __name__ == "__main__":
     app.run(debug=True)
