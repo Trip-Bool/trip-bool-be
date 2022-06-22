@@ -8,11 +8,8 @@ from urllib.parse import quote_plus, urlencode
 from dotenv import find_dotenv, load_dotenv
 from authlib.integrations.flask_client import OAuth
 from weather_parse import current_weather, weather_time_machine, coordinates
+import requests
 
-
-# Date Start and Date End Unix Conversions:
-    # "start_unix": datetime.datetime.timestamp(trip.date_start)
-    # "end_unix": datetime.datetime.timestamp(trip.date_end)
 
 # ENV Setup
 username = os.environ.get('DB_USERNAME')
@@ -58,7 +55,9 @@ def create():
         location = request.form['location']
         start_datetime = datetime.datetime.fromisoformat(start_date)
         end_datetime = datetime.datetime.fromisoformat(end_date)
-        trip = TripModel(name=name, date_start=start_datetime, date_end=end_datetime, location=location)
+        start_unix = datetime.datetime.timestamp(start_datetime)
+        end_unix = datetime.datetime.timestamp(end_datetime)
+        trip = TripModel(name=name, start_date=start_unix, end_date=end_unix, location=location)
         db.session.add(trip)
         db.session.commit()
         return make_response("", 201)
@@ -72,8 +71,8 @@ def retrieve_list():
     for trip in trips:
         item = {
             "name": trip.name,
-            "date_start": trip.date_start,
-            "date_end": trip.date_end,
+            "start_date": trip.start_date,
+            "end_date": trip.end_date,
             "location": trip.location
         }
         data[f'{trip.id}'] = item
@@ -85,8 +84,8 @@ def retrive_trip(id):
     if trip:
         data = {
             "name": trip.name,
-            "date_start": trip.date_start,
-            "date_end": trip.date_end,
+            "start_date": trip.start_date,
+            "end_date": trip.end_date,
             "location": trip.location
         }
         return make_response(data, 200)
@@ -105,7 +104,9 @@ def update(id):
             location = request.form['location']
             start_datetime = datetime.datetime.fromisoformat(start_date)
             end_datetime = datetime.datetime.fromisoformat(end_date)
-            trip = TripModel(name=name, date_start=start_datetime, date_end=end_datetime, location=location)
+            start_unix = datetime.datetime.timestamp(start_datetime)
+            end_unix = datetime.datetime.timestamp(end_datetime)
+            trip = TripModel(name=name, start_date=start_unix, end_date=end_unix, location=location)
             db.session.add(trip)
             db.session.commit()
             return make_response("", 201)
@@ -125,9 +126,29 @@ def delete(id):
     
     return make_response(trip, 200)
 
+@app.route('/data/<string:name>')
+def get_by_name(name):
+    trips = TripModel.query.filter_by(name=name).all()
+    data = {}
+    if trips:
+        for trip in trips:
+            item = {
+                "name": trip.name,
+                "start_date": trip.start_date,
+                "end_date": trip.end_date,
+                "location": trip.location
+            }
+            data[f'{trip.id}'] = item
+    return make_response(data, 200)
+
 # Home Route
 @app.route("/")
 def index():
+    url = 'http://127.0.0.1:5000/data/20'
+    return_trip = requests.get(url)
+    return_json = return_trip.json()
+    print(type(return_json['start_date']))
+
     return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
 
 
