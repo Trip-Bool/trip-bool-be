@@ -10,12 +10,14 @@
 
 ## Links and Resources
 
-- back-end server url (To Be Added)
+- [Back-End Server URL](https://trip-bool.herokuapp.com)
 
 ## Setup
 
-- To run app, first add all necessary info to .env and then;
-    - python app.py
+- To run app;
+  - Run pip -i requirements.txt to install all necessary libraries
+  - Then add add all necessary info to .env
+  - Finally, python app.py
 
 ## Tests
 
