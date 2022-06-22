@@ -1,0 +1,11 @@
+{
+  "temp": 303.96,
+  "weather": [
+    {
+      "description": "clear sky",
+      "icon": "01d",
+      "id": 800,
+      "main": "Clear"
+    }
+  ]
+}
