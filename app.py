@@ -78,8 +78,9 @@ def retrieve_list():
         data[f'{trip.id}'] = item
     return make_response(data, 200)
 
+
 @app.route('/data/<int:id>')
-def retrive_trip(id):
+def retrieve_trip(id):
     trip = TripModel.query.filter_by(id=id).first()
     if trip:
         data = {
@@ -154,6 +155,20 @@ def index():
 
 # Weather Routes
 
+
+@app.route("/weather/<int:id>")
+def get_weather_by_id(id):
+    response = retrieve_trip(id)  # might need to replace with GET request w/ url route
+    trip_object = response.json
+    location = trip_object["location"]
+    start_date = trip_object["date_start"]
+    end_date = trip_object["date_end"]
+    weather_data = get_trip_weather(location, start_date, end_date)
+    trip_weather = weather_data.json
+    return make_response(trip_weather, 200)
+
+
+
 @app.route("/weather/<string:location>/<int:start_date>/<int:end_date>")
 def get_trip_weather(location, start_date, end_date):
     """
@@ -169,8 +184,8 @@ def get_trip_weather(location, start_date, end_date):
     Arguments
     ---------
     :location: string
-    :start_date: 10-digit Unix timestamp
-    :end_date: 10-digit Unix timestamp
+    :start_date: Unix 10-digit (float)
+    :end_date: Unix 10-digit (float)
 
     Returns
     -------
@@ -178,6 +193,8 @@ def get_trip_weather(location, start_date, end_date):
     :forecast_weather: dict holding weather data for dates within next 7 days
     :historic_weather: dict holding weather data for dates beyond next 7 days
     """
+    start_date = round(start_date)
+    end_date = round(end_date)
     coords = coordinates(location)
     date_today = datetime.datetime.now()
     current = round(datetime.datetime.timestamp(date_today))
@@ -185,6 +202,7 @@ def get_trip_weather(location, start_date, end_date):
     boundary = add_time_to_stamp(current, 7)
     forecast_weather = {}
     historic_weather = {}
+    all_weather = {}
     date_list = []
 
     date_marker = start_date
@@ -199,8 +217,10 @@ def get_trip_weather(location, start_date, end_date):
     else:
         get_forecast(coords, days_from_today, date_list, forecast_weather)
 
-    data_collections = [forecast_weather, historic_weather]
-    return f'{data_collections}'
+    all_weather["forecast_weather"] = forecast_weather
+    all_weather["historic_weather"] = historic_weather
+    return make_response(all_weather, 200)
+
 
 def get_forecast(coords, days_from_today, dates, forecasts={}):
     """
@@ -219,11 +239,11 @@ def get_forecast(coords, days_from_today, dates, forecasts={}):
     date_keys = []
     index = days_from_today
     for date in dates:
-        date_keys.append(date)
+        date_keys.append(str(date))
     forecasts["dates"] = date_keys
     for date in dates:
         date_weather = api_response["data"][index]
-        forecasts[date] = date_weather
+        forecasts[str(date)] = date_weather
         index += 1
     return
 
@@ -239,14 +259,17 @@ def get_historic(coords, dates, historics={}):
     :dates: list of dates passed in from get_trip_weather()
     :forecasts: empty dictionary passed in from get_trip_weather()
     """
-    historics["dates"] = dates
+    date_keys = []
+    for date in dates:
+        date_keys.append(str(date))
+    historics["dates"] = date_keys
     lat = coords.json["lat"]
     lon = coords.json["lon"]
     for date in dates:
         last_year_date = add_time_to_stamp(date, -365)
         api_result = weather_time_machine(lat, lon, last_year_date)
         api_response = api_result.json
-        historics[date] = api_response
+        historics[str(date)] = api_response
     return
 
 
