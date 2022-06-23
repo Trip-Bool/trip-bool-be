@@ -9,6 +9,7 @@ from dotenv import find_dotenv, load_dotenv
 from authlib.integrations.flask_client import OAuth
 from weather_parse import current_weather, weather_time_machine, coordinates
 import requests
+from flask_cors import CORS
 
 
 # ENV Setup
@@ -21,6 +22,7 @@ if ENV_FILE:
     load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
+CORS(app)
 
 # OAuth Setup
 app.secret_key = os.environ.get("APP_SECRET_KEY")
