@@ -19,6 +19,7 @@ def coordinates(location):
     '''
     Returs an object with latitude and lon keys of a given location. 
     '''
+    location = location.replace(" ", "%20")
     location_key = os.environ.get("LOCATIONIQ_KEY")
     coordinates_url = f"https://us1.locationiq.com/v1/search?key={location_key}&q={location}&format=json"
     coordinates_dict = get_info(coordinates_url)
@@ -64,12 +65,13 @@ def timezone_adjust():
 # http://api.timezonedb.com/v2.1/get-time-zone?key=BUAA5HGQEO7Y&format=json&by=position&lat=40.689247&lng=-74.044502
 
 
-def get_time_zone(lat, lon, unix):
-    timezone_url = f'http://api.timezonedb.com/v2.1/get-time-zone?key={timezone_key}&format=json&by=position&lat={lat}&lng={lon}&time={unix}'
+def get_time_zone(lat, lon):
+    timezone_url = f'http://api.timezonedb.com/v2.1/get-time-zone?key={timezone_key}&format=json&by=position&lat={lat}&lng={lon}'
     timezone_info = get_info(timezone_url)
     timezone_data = {
-        "gmt_offset": timezone_info["gmtOffset"],
-        "timestamp": timezone_info["timestamp"],
-        "formatted": timezone_info["formatted"],
+        "timeZone": timezone_info["zoneName"],
+        "zoneAbrev": timezone_info["abbreviation"],
+        "gmtOffset": timezone_info["gmtOffset"],
+
     }
     return make_response(timezone_data, 200)
