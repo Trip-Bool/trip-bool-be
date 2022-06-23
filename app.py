@@ -7,7 +7,7 @@ import json
 from urllib.parse import quote_plus, urlencode
 from dotenv import find_dotenv, load_dotenv
 from authlib.integrations.flask_client import OAuth
-from weather_parse import current_weather, weather_time_machine, coordinates
+from weather_parse import current_weather, weather_time_machine, coordinates, get_time_zone
 import requests
 from flask_cors import CORS
 
@@ -129,7 +129,7 @@ def delete(id):
     
     return make_response(trip, 200)
 
-@app.route('/data/<string:name>')
+# @app.route('/data/<string:name>')
 def get_by_name(name):
     trips = TripModel.query.filter_by(name=name).all()
     data = {}
@@ -144,6 +144,25 @@ def get_by_name(name):
             data[f'{trip.id}'] = item
     return make_response(data, 200)
 
+
+@app.route("/weather/<string:name>")
+def get_all_user_trip_weather(name):
+    all_user_trip_weather = {}
+    all_user_trip_weather["_userName"] = name
+    trip_weather_list = []
+    all_trips_data = get_by_name(name).json
+    for trip_id in all_trips_data.keys():
+        trip_data = all_trips_data[trip_id]
+        start_date = trip_data["start_date"]
+        end_date = trip_data["end_date"]
+        location = trip_data["location"]
+        weather_response = get_trip_weather(location, start_date, end_date)
+        trip_weather = weather_response.json
+        trip_weather_list.append(trip_weather)
+    all_user_trip_weather["tripWeather"] = trip_weather_list
+    return make_response(all_user_trip_weather, 200)
+
+
 @app.route('/yelp/restaurants/<latitude>/<longitude>/<string:price>')
 def yelp_restaurant_api_call(latitude,longitude,price):
     url = f'https://api.yelp.com/v3/businesses/search?term=restaurants&radius=16093&limit=10&sort_by=rating&price={price}&latitude={latitude}&longitude={longitude}'
@@ -151,6 +170,7 @@ def yelp_restaurant_api_call(latitude,longitude,price):
     headers = {"Authorization": f"Bearer {yelp_key}"}
     response = requests.get(url, headers=headers)
     return make_response(response.json(), 200)
+
 
 @app.route('/yelp/outdoors/<latitude>/<longitude>')
 def yelp_outdoors_api_call(latitude,longitude):
@@ -160,6 +180,7 @@ def yelp_outdoors_api_call(latitude,longitude):
     response = requests.get(url, headers=headers)
     return make_response(response.json(), 200)
 
+
 @app.route('/yelp/hotels/<latitude>/<longitude>/<string:price>')
 def yelp_hotel_api_call(latitude,longitude,price):
     url = f'https://api.yelp.com/v3/businesses/search?categories=hotels&radius=16093&limit=10&sort_by=rating&price={price}&latitude={latitude}&longitude={longitude}'
@@ -167,6 +188,7 @@ def yelp_hotel_api_call(latitude,longitude,price):
     headers = {"Authorization": f"Bearer {yelp_key}"}
     response = requests.get(url, headers=headers)
     return make_response(response.json(), 200)
+
 
 # Home Route
 @app.route("/")
@@ -190,7 +212,7 @@ def get_weather_by_id(id):
 
 
 
-@app.route("/weather/<string:location>/<int:start_date>/<int:end_date>")
+# @app.route("/weather/<string:location>/<int:start_date>/<int:end_date>")
 def get_trip_weather(location, start_date, end_date):
     """
     Function takes a trip's location, start and end dates.
@@ -236,9 +258,17 @@ def get_trip_weather(location, start_date, end_date):
         get_both(coords, days_from_today, boundary, date_list, forecast_weather, historic_weather)
     else:
         get_forecast(coords, days_from_today, date_list, forecast_weather)
-    all_weather["destination"] = location.title()
-    all_weather["forecast_weather"] = forecast_weather
-    all_weather["historic_weather"] = historic_weather
+    start_date_details = convert_unix_to_dict(start_date)
+    end_date_details = convert_unix_to_dict(end_date)
+    coords_response = coords.json
+    tz_response = get_time_zone(coords_response["lat"], coords_response["lon"])
+    time_zone = tz_response.json
+    all_weather["timeZoneDate"] = time_zone
+    all_weather["_location"] = location.title()
+    all_weather["beginTrip"] = start_date_details
+    all_weather["endTrip"] = end_date_details
+    all_weather["forecastWeather"] = forecast_weather
+    all_weather["historicWeather"] = historic_weather
     return make_response(all_weather, 200)
 
 
@@ -257,13 +287,10 @@ def get_forecast(coords, days_from_today, dates, forecasts=[]):
     api_result = current_weather(coords_response["lat"], coords_response["lon"])
     api_response = api_result.json
     index = days_from_today
-    # for date in dates:
-    #     date_keys.append(str(date))
-    # forecasts["dates"] = date_keys
     for date in dates:
         date_weather = api_response["data"][index]
         forecasts.append(date_weather)
-        date_weather["date"] = str(date)
+        date_weather["date"] = convert_unix_to_dict(date)
         index += 1
     return
 
@@ -285,7 +312,7 @@ def get_historic(coords, dates, historics=[]):
         last_year_date = add_time_to_stamp(date, -365)
         api_response = weather_time_machine(lat, lon, last_year_date)
         date_weather = api_response.json
-        date_weather["date"] = str(date)
+        date_weather["date"] = convert_unix_to_dict(date)
         historics.append(date_weather)
     return
 
@@ -331,6 +358,11 @@ def convert_from_timestamp(unix):
     return date
 
 
+def get_date_components(unix):
+    date = convert_from_timestamp(unix)
+
+
+
 def json_test(file):
     f = open(file)
     data = json.load(f)
@@ -343,9 +375,7 @@ def kelvin_to_fahrenheit(kelvin_temp):
     return fahrenheit
 
 
-def render_test(collection):
-    forecast_weather = collection[0]
-    date_keys = forecast_weather['dates']
+def convert_unix_to_dict(date):
     days_of_week = [
         'Monday', 'Tuesday', 'Wednesday', 'Thursday',
         'Friday', 'Saturday', 'Sunday',
@@ -354,20 +384,20 @@ def render_test(collection):
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December',
     ]
-    for date in date_keys:
-        normal_date = convert_from_timestamp(date)
-        day_of_week_index = normal_date.weekday()
-        weekday = days_of_week[day_of_week_index]
-        date_string = str(normal_date)
-        month_index = int(date_string[5:7])
-        month = months[month_index]
-        day_of_month = date_string[8:10]
-        year = date_string[0:4]
-        kelvin = forecast_weather[date]["temp"]
-        temp = round(kelvin_to_fahrenheit(kelvin))
-        description = forecast_weather[date]["weather"][0]["description"]
-        msg = f"{weekday} {month} {day_of_month}, {year} will be {temp}°, {description}"
-        print(msg)
+    normal_date = convert_from_timestamp(date)
+    day_of_week_index = normal_date.weekday()
+    weekday = days_of_week[day_of_week_index]
+    date_string = str(normal_date)
+    month_index = int(date_string[5:7]) - 1
+    month = months[month_index]
+    day_of_month = date_string[8:10]
+    year = date_string[0:4]
+    date_dict = {}
+    date_dict["weekday"] = weekday
+    date_dict["month"] = month
+    date_dict["day"] = day_of_month
+    date_dict["year"] = year
+    return date_dict
 
 
 
