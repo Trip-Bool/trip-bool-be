@@ -175,12 +175,11 @@ def get_trip_weather(location, start_date, end_date):
     start_date = round(start_date)
     end_date = round(end_date)
     coords = coordinates(location)
-    date_today = datetime.datetime.now()
-    current = round(datetime.datetime.timestamp(date_today))
-    days_from_today = round((start_date - current) / 86400)
-    boundary = add_time_to_stamp(current, 7)
-    forecast_weather = {}
-    historic_weather = {}
+    date_today = normalize_current_time()
+    days_from_today = round((start_date - date_today) / 86400)
+    boundary = add_time_to_stamp(date_today, 7)
+    forecast_weather = []
+    historic_weather = []
     all_weather = {}
     date_list = []
 
@@ -195,13 +194,13 @@ def get_trip_weather(location, start_date, end_date):
         get_both(coords, days_from_today, boundary, date_list, forecast_weather, historic_weather)
     else:
         get_forecast(coords, days_from_today, date_list, forecast_weather)
-
+    all_weather["destination"] = location.title()
     all_weather["forecast_weather"] = forecast_weather
     all_weather["historic_weather"] = historic_weather
     return make_response(all_weather, 200)
 
 
-def get_forecast(coords, days_from_today, dates, forecasts={}):
+def get_forecast(coords, days_from_today, dates, forecasts=[]):
     """
     Function takes a list of dates and an empty dictionary.
     Directs one API call for forecast weather data, and parses through it.
@@ -215,19 +214,19 @@ def get_forecast(coords, days_from_today, dates, forecasts={}):
     coords_response = coords.json
     api_result = current_weather(coords_response["lat"], coords_response["lon"])
     api_response = api_result.json
-    date_keys = []
     index = days_from_today
-    for date in dates:
-        date_keys.append(str(date))
-    forecasts["dates"] = date_keys
+    # for date in dates:
+    #     date_keys.append(str(date))
+    # forecasts["dates"] = date_keys
     for date in dates:
         date_weather = api_response["data"][index]
-        forecasts[str(date)] = date_weather
+        forecasts.append(date_weather)
+        date_weather["date"] = str(date)
         index += 1
     return
 
 
-def get_historic(coords, dates, historics={}):
+def get_historic(coords, dates, historics=[]):
     """
     Function takes a list of dates and an empty dictionary.
     Iterates through dates, directs an API call for historic weather data for each.
@@ -238,21 +237,18 @@ def get_historic(coords, dates, historics={}):
     :dates: list of dates passed in from get_trip_weather()
     :forecasts: empty dictionary passed in from get_trip_weather()
     """
-    date_keys = []
-    for date in dates:
-        date_keys.append(str(date))
-    historics["dates"] = date_keys
     lat = coords.json["lat"]
     lon = coords.json["lon"]
     for date in dates:
         last_year_date = add_time_to_stamp(date, -365)
-        api_result = weather_time_machine(lat, lon, last_year_date)
-        api_response = api_result.json
-        historics[str(date)] = api_response
+        api_response = weather_time_machine(lat, lon, last_year_date)
+        date_weather = api_response.json
+        date_weather["date"] = str(date)
+        historics.append(date_weather)
     return
 
 
-def get_both(coords, from_today, boundary, dates, forecasts={}, historics={}):
+def get_both(coords, from_today, boundary, dates, forecasts=[], historics=[]):
     """
     docstring
     """
@@ -271,6 +267,18 @@ def get_both(coords, from_today, boundary, dates, forecasts={}, historics={}):
 def add_time_to_stamp(unix, num_days):
     time_add = num_days * 86400
     return unix + time_add
+
+
+def normalize_current_time():
+    current_datetime = datetime.datetime.now()
+    current_dt_str = str(current_datetime)
+    num_hrs = int(current_dt_str[11:13])
+    num_mins = int(current_dt_str[14:16])
+    num_secs = int(current_dt_str[17:19])
+    today_total_secs = (num_hrs * 3600) + (num_mins * 60) + num_secs
+    current_timestamp = round(datetime.datetime.timestamp(current_datetime))
+    today_normalized = current_timestamp - today_total_secs
+    return today_normalized
 
 
 # Helpful testing functions that can eventually be removed:
@@ -351,3 +359,8 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+"""
+
+"""
