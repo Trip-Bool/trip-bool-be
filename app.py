@@ -180,8 +180,8 @@ def get_weather_by_id(id):
     response = retrieve_trip(id)  # might need to replace with GET request w/ url route
     trip_object = response.json
     location = trip_object["location"]
-    start_date = trip_object["date_start"]
-    end_date = trip_object["date_end"]
+    start_date = trip_object["start_date"]
+    end_date = trip_object["end_date"]
     weather_data = get_trip_weather(location, start_date, end_date)
     trip_weather = weather_data.json
     return make_response(trip_weather, 200)
