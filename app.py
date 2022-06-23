@@ -142,14 +142,33 @@ def get_by_name(name):
             data[f'{trip.id}'] = item
     return make_response(data, 200)
 
+@app.route('/yelp/restaurants/<latitude>/<longitude>/<string:price>')
+def yelp_restaurant_api_call(latitude,longitude,price):
+    url = f'https://api.yelp.com/v3/businesses/search?term=restaurants&radius=16093&limit=10&sort_by=rating&price={price}&latitude={latitude}&longitude={longitude}'
+    yelp_key = os.environ.get("YELP_API_KEY")
+    headers = {"Authorization": f"Bearer {yelp_key}"}
+    response = requests.get(url, headers=headers)
+    return make_response(response.json(), 200)
+
+@app.route('/yelp/outdoors/<latitude>/<longitude>')
+def yelp_outdoors_api_call(latitude,longitude):
+    url = f'https://api.yelp.com/v3/businesses/search?term=outdoor activities&radius=16093&limit=10&sort_by=rating&latitude={latitude}&longitude={longitude}'
+    yelp_key = os.environ.get("YELP_API_KEY")
+    headers = {"Authorization": f"Bearer {yelp_key}"}
+    response = requests.get(url, headers=headers)
+    return make_response(response.json(), 200)
+
+@app.route('/yelp/hotels/<latitude>/<longitude>/<string:price>')
+def yelp_hotel_api_call(latitude,longitude,price):
+    url = f'https://api.yelp.com/v3/businesses/search?categories=hotels&radius=16093&limit=10&sort_by=rating&price={price}&latitude={latitude}&longitude={longitude}'
+    yelp_key = os.environ.get("YELP_API_KEY")
+    headers = {"Authorization": f"Bearer {yelp_key}"}
+    response = requests.get(url, headers=headers)
+    return make_response(response.json(), 200)
+
 # Home Route
 @app.route("/")
 def index():
-    # url = 'http://127.0.0.1:5000/data/20'
-    # return_trip = requests.get(url)
-    # return_json = return_trip.json()
-    # print(type(return_json['start_date']))
-
     return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
 
 
