@@ -8,11 +8,9 @@ from urllib.parse import quote_plus, urlencode
 from dotenv import find_dotenv, load_dotenv
 from authlib.integrations.flask_client import OAuth
 from weather_parse import current_weather, weather_time_machine, coordinates
+import requests
+from flask_cors import CORS
 
-
-# Date Start and Date End Unix Conversions:
-    # "start_unix": datetime.datetime.timestamp(trip.date_start)
-    # "end_unix": datetime.datetime.timestamp(trip.date_end)
 
 # ENV Setup
 username = os.environ.get('DB_USERNAME')
@@ -24,6 +22,7 @@ if ENV_FILE:
     load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
+CORS(app)
 
 # OAuth Setup
 app.secret_key = os.environ.get("APP_SECRET_KEY")
@@ -58,7 +57,9 @@ def create():
         location = request.form['location']
         start_datetime = datetime.datetime.fromisoformat(start_date)
         end_datetime = datetime.datetime.fromisoformat(end_date)
-        trip = TripModel(name=name, date_start=start_datetime, date_end=end_datetime, location=location)
+        start_unix = datetime.datetime.timestamp(start_datetime)
+        end_unix = datetime.datetime.timestamp(end_datetime)
+        trip = TripModel(name=name, start_date=start_unix, end_date=end_unix, location=location)
         db.session.add(trip)
         db.session.commit()
         return make_response("", 201)
@@ -72,8 +73,8 @@ def retrieve_list():
     for trip in trips:
         item = {
             "name": trip.name,
-            "date_start": trip.date_start,
-            "date_end": trip.date_end,
+            "start_date": trip.start_date,
+            "end_date": trip.end_date,
             "location": trip.location
         }
         data[f'{trip.id}'] = item
@@ -86,8 +87,8 @@ def retrieve_trip(id):
     if trip:
         data = {
             "name": trip.name,
-            "date_start": trip.date_start,
-            "date_end": trip.date_end,
+            "start_date": trip.start_date,
+            "end_date": trip.end_date,
             "location": trip.location
         }
         return make_response(data, 200)
@@ -106,7 +107,9 @@ def update(id):
             location = request.form['location']
             start_datetime = datetime.datetime.fromisoformat(start_date)
             end_datetime = datetime.datetime.fromisoformat(end_date)
-            trip = TripModel(name=name, date_start=start_datetime, date_end=end_datetime, location=location)
+            start_unix = datetime.datetime.timestamp(start_datetime)
+            end_unix = datetime.datetime.timestamp(end_datetime)
+            trip = TripModel(name=name, start_date=start_unix, end_date=end_unix, location=location)
             db.session.add(trip)
             db.session.commit()
             return make_response("", 201)
@@ -126,6 +129,45 @@ def delete(id):
     
     return make_response(trip, 200)
 
+@app.route('/data/<string:name>')
+def get_by_name(name):
+    trips = TripModel.query.filter_by(name=name).all()
+    data = {}
+    if trips:
+        for trip in trips:
+            item = {
+                "name": trip.name,
+                "start_date": trip.start_date,
+                "end_date": trip.end_date,
+                "location": trip.location
+            }
+            data[f'{trip.id}'] = item
+    return make_response(data, 200)
+
+@app.route('/yelp/restaurants/<latitude>/<longitude>/<string:price>')
+def yelp_restaurant_api_call(latitude,longitude,price):
+    url = f'https://api.yelp.com/v3/businesses/search?term=restaurants&radius=16093&limit=10&sort_by=rating&price={price}&latitude={latitude}&longitude={longitude}'
+    yelp_key = os.environ.get("YELP_API_KEY")
+    headers = {"Authorization": f"Bearer {yelp_key}"}
+    response = requests.get(url, headers=headers)
+    return make_response(response.json(), 200)
+
+@app.route('/yelp/outdoors/<latitude>/<longitude>')
+def yelp_outdoors_api_call(latitude,longitude):
+    url = f'https://api.yelp.com/v3/businesses/search?term=outdoor activities&radius=16093&limit=10&sort_by=rating&latitude={latitude}&longitude={longitude}'
+    yelp_key = os.environ.get("YELP_API_KEY")
+    headers = {"Authorization": f"Bearer {yelp_key}"}
+    response = requests.get(url, headers=headers)
+    return make_response(response.json(), 200)
+
+@app.route('/yelp/hotels/<latitude>/<longitude>/<string:price>')
+def yelp_hotel_api_call(latitude,longitude,price):
+    url = f'https://api.yelp.com/v3/businesses/search?categories=hotels&radius=16093&limit=10&sort_by=rating&price={price}&latitude={latitude}&longitude={longitude}'
+    yelp_key = os.environ.get("YELP_API_KEY")
+    headers = {"Authorization": f"Bearer {yelp_key}"}
+    response = requests.get(url, headers=headers)
+    return make_response(response.json(), 200)
+
 # Home Route
 @app.route("/")
 def index():
@@ -140,8 +182,8 @@ def get_weather_by_id(id):
     response = retrieve_trip(id)  # might need to replace with GET request w/ url route
     trip_object = response.json
     location = trip_object["location"]
-    start_date = trip_object["date_start"]
-    end_date = trip_object["date_end"]
+    start_date = trip_object["start_date"]
+    end_date = trip_object["end_date"]
     weather_data = get_trip_weather(location, start_date, end_date)
     trip_weather = weather_data.json
     return make_response(trip_weather, 200)
