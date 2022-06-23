@@ -1,0 +1,79 @@
+{
+    "destination": "Seattle",
+    "forecast_weather": [
+      {
+        "date": "1656374400",
+        "temp": 76.03,
+        "weather": [
+          {
+            "description": "scattered clouds",
+            "icon": "03d",
+            "id": 802,
+            "main": "Clouds"
+          }
+        ]
+      },
+      {
+        "date": "1656460800",
+        "temp": 62.94,
+        "weather": [
+          {
+            "description": "light rain",
+            "icon": "10d",
+            "id": 500,
+            "main": "Rain"
+          }
+        ]
+      },
+      {
+        "date": "1656547200",
+        "temp": 74.61,
+        "weather": [
+          {
+            "description": "clear sky",
+            "icon": "01d",
+            "id": 800,
+            "main": "Clear"
+          }
+        ]
+      }
+    ],
+    "historic_weather": [
+      {
+        "date": "1656633600",
+        "temp": 72.03,
+        "weather": [
+          {
+            "description": "scattered clouds",
+            "icon": "03d",
+            "id": 802,
+            "main": "Clouds"
+          }
+        ]
+      },
+      {
+        "date": "1656720000",
+        "temp": 74.28,
+        "weather": [
+          {
+            "description": "overcast clouds",
+            "icon": "04d",
+            "id": 804,
+            "main": "Clouds"
+          }
+        ]
+      },
+      {
+        "date": "1656806400",
+        "temp": 77.11,
+        "weather": [
+          {
+            "description": "scattered clouds",
+            "icon": "03d",
+            "id": 802,
+            "main": "Clouds"
+          }
+        ]
+      }
+    ]
+  }
