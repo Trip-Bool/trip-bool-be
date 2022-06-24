@@ -61,7 +61,6 @@ def weather_time_machine(lat, lon, day):
     return make_response(history_data, 200)
 
 
-
 def get_time_zone():
     timezone_data = {
         "timeZone": "default",
