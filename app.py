@@ -260,8 +260,7 @@ def get_trip_weather(location, start_date, end_date):
         get_forecast(coords, days_from_today, date_list, forecast_weather)
     start_date_details = convert_unix_to_dict(start_date)
     end_date_details = convert_unix_to_dict(end_date)
-    coords_response = coords.json
-    tz_response = get_time_zone(coords_response["lat"], coords_response["lon"])
+    tz_response = get_time_zone()
     time_zone = tz_response.json
     all_weather["timeZoneDate"] = time_zone
     all_weather["_location"] = location.title()
@@ -431,8 +430,3 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-"""
-
-"""
