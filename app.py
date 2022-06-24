@@ -193,7 +193,7 @@ def yelp_hotel_api_call(latitude,longitude,price):
 # Home Route
 @app.route("/")
 def index():
-    return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
+    return render_template("home.html", session=session.get('user'), indent=4)
 
 
 # Weather Routes
@@ -207,6 +207,8 @@ def get_weather_by_id(id):
     start_date = trip_object["start_date"]
     end_date = trip_object["end_date"]
     weather_data = get_trip_weather(location, start_date, end_date)
+    if weather_data.status_code == 400:
+        return make_response("Invalid Start Date, You likely chose a date in the past.", 400)
     trip_weather = weather_data.json
     return make_response(trip_weather, 200)
 
@@ -241,6 +243,8 @@ def get_trip_weather(location, start_date, end_date):
     coords = coordinates(location)
     date_today = normalize_current_time()
     days_from_today = round((start_date - date_today) / 86400)
+    if days_from_today < 0:
+        return make_response("Invalid Start Date, You likely chose a date in the past.", 400)
     boundary = add_time_to_stamp(date_today, 7)
     forecast_weather = []
     historic_weather = []
