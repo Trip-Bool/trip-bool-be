@@ -1,5 +1,6 @@
 import json
 import os
+from time import sleep
 import urllib.request
 from flask import make_response
 
@@ -67,6 +68,7 @@ def timezone_adjust():
 
 def get_time_zone(lat, lon):
     timezone_url = f'http://api.timezonedb.com/v2.1/get-time-zone?key={timezone_key}&format=json&by=position&lat={lat}&lng={lon}'
+    sleep(1)
     timezone_info = get_info(timezone_url)
     timezone_data = {
         "timeZone": timezone_info["zoneName"],
