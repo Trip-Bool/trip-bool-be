@@ -1,5 +1,6 @@
 import json
 import os
+from time import sleep
 import urllib.request
 from flask import make_response
 
@@ -58,6 +59,7 @@ def weather_time_machine(lat, lon, day):
         "weather": weather_info['data'][0]["weather"],
     }
     return make_response(history_data, 200)
+
 
 
 def get_time_zone():
