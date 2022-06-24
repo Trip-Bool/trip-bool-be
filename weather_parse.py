@@ -5,7 +5,7 @@ import urllib.request
 from flask import make_response
 
 weather_key = os.environ.get("WEATHER_API_KEY")
-timezone_key = os.environ.get("TIMEZONE_API_KEY")
+# timezone_key = os.environ.get("TIMEZONE_API_KEY")
 
 def get_info(url):
     '''
@@ -61,14 +61,10 @@ def weather_time_machine(lat, lon, day):
     return make_response(history_data, 200)
 
 
-def get_time_zone(lat, lon):
-    timezone_url = f'http://api.timezonedb.com/v2.1/get-time-zone?key={timezone_key}&format=json&by=position&lat={lat}&lng={lon}'
-    sleep(1)
-    timezone_info = get_info(timezone_url)
+def get_time_zone():
     timezone_data = {
-        "timeZone": timezone_info["zoneName"],
-        "zoneAbrev": timezone_info["abbreviation"],
-        "gmtOffset": timezone_info["gmtOffset"],
-
+        "timeZone": "default",
+        "zoneAbrev": "default",
+        "gmtOffset": "default",
     }
     return make_response(timezone_data, 200)

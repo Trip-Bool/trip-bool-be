@@ -1,6 +1,7 @@
 import pytest
 import requests
-from weather_parse import get_info, coordinates, current_weather, weather_time_machine, get_time_zone
+import os
+from weather_parse import coordinates, get_info
 
 
 # @pytest.mark.skip("TODO")
@@ -102,15 +103,26 @@ def test_trip_delete():
     expected = 410
     assert actual.status_code == expected
 
+
 # @pytest.mark.skip("TODO")
-# def test():
-#     actual =
-#     expected = 
+# def test_coordinates_path():
+#     location = "seattle"
+#     location = location.replace(" ", "%20")
+#     location_key = os.environ.get("LOCATIONIQ_KEY")
+#     coordinates_url = f"https://us1.locationiq.com/v1/search?key={location_key}&q={location}&format=json"
+#     coordinates_dict = get_info(coordinates_url)
+#     actual = {
+#         "lat": coordinates_dict[0]["lat"],
+#         "lon": coordinates_dict[0]["lon"],
+#     }
+#     expected = {
+#         "lat": "47.6038321",
+#         "lon": "-122.3300624",
+#     }
 #     assert actual == expected
 
-
 # @pytest.mark.skip("TODO")
-# def test():
-#     actual =
-#     expected = 
-#     assert actual == expected.
+def test_coordinates_path():
+
+    assert actual == expected
+
